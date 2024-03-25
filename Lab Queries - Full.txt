@@ -1,0 +1,456 @@
+/* QUESTIONS FOR GENDER PAY GAP LAB
+-- INITIAL INSPECTION
+1. How many companies are in the data set?
+2. How many of them submitted their data after the reporting deadline
+3. How many companies have not provided a URL?
+4. Which measures of pay gap contain too much missing data, and should not be used in our analysis?
+BONUS (Optional): Can you find out what the 'SicCodes' column corresponds to? Is there a way we can understand what each SIC codse represents? Search online for extra information
+-- THE UK-WIDE PAY GAP
+5. Choose which column you will use to calculate the pay gap. Will you use DiffMeanHourlyPercent or DiffMedianHourlyPercent? Can you justify your choice?
+6. Use an appropriate metric to find the average gender pay gap across all the companies in the data set. Did you use the mean or the median as your averaging metric? Can you justify your choice?
+7. What are some caveats we need to be aware of when reporting the figure we've just calculated?
+-- LARGEST PAY GAPS
+8. What are the 10 companies with the largest pay gaps skewed towards men?
+9. What do you notice about the results? Are these well-known companies?
+10. Apply some additional filtering to pick out the most significant companies with large pay gaps.
+11. How would you report on the results? Can we say that these companies are engaging in unlawful pay discrimination?
+-- GEOGRAPHIC DIFFERENCES
+12. What's the average pay gap in London versus outside London?
+13. What's the averaeg pay gap in London versus Birmingham?
+-- INDUSTRY DIFFERENCES
+14. What's the average pay gap within schools?
+15. What's the average pay gap within banks?
+16. Is there a relationship between the number of employees at a company and the average pay gap?*/
+
+
+-- INITIAL INSPECTION
+-- 1. How many companies are in the data set?
+SELECT employerid
+FROM gender_pay_gap_21_22 -- 10174 companies listed. Checked using DISTINCT and plain, number is same. employerid is a unique identifier
+--WHERE employerid IS NULL -- Checking for nulls. None listed
+
+
+-- 2. How many of them submitted their data after the reporting deadline
+SELECT submittedafterthedeadline
+FROM gender_pay_gap_21_22
+WHERE submittedafterthedeadline IS TRUE --361 companies came up as having submitted after the deadline
+
+
+-- 3. How many companies have not provided a URL?
+SELECT companylinktogpginfo
+FROM gender_pay_gap_21_22
+WHERE companylinktogpginfo = '0' -- 3,700 companies come up as not having provided a URL
+
+
+-- 4. Which measures of pay gap contain too much missing data, and should not be used in our analysis?
+    -- BONUS (Optional): Can you find out what the 'SicCodes' column corresponds to? 
+    -- Is there a way we can understand what each SIC codse represents? Search online for extra information
+SELECT 
+    SUM(CASE WHEN employername = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS employername_null_rate,
+    SUM(CASE WHEN employerid  = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS employerid_null_rate,
+    SUM(CASE WHEN address = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS address_null_rate,
+    SUM(CASE WHEN postcode = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS postcode_null_rate, 
+    SUM(CASE WHEN companynumber = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS companynumber_null_rate,
+    SUM(CASE WHEN siccodes = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS siccodes_null_rate,
+    SUM(CASE WHEN CAST(diffmeanhourlypercent AS text) ='0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS diffmeanhourlypercent_null_rate,
+    SUM(CASE WHEN CAST(diffmedianhourlypercent AS text) = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS diffmedianhourlypercent_null_rate,
+    SUM(CASE WHEN CAST(diffmeanbonuspercent AS text) = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS diffmeanbonuspercent_null_rate,
+    SUM(CASE WHEN CAST(diffmedianbonuspercent AS text) = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS diffmedianbonuspercent_null_rate,
+    SUM(CASE WHEN CAST(malebonuspercent AS text) = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS malebonuspercent_null_rate,
+    SUM(CASE WHEN CAST(femalebonuspercent AS text) = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS femalebonuspercent_null_rate,
+    SUM(CASE WHEN CAST(malelowerquartile AS text) = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS malelowerquartile_null_rate,
+    SUM(CASE WHEN CAST(femalelowerquartile AS text) = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS femalelowerquartile_null_rate,
+    SUM(CASE WHEN CAST(malelowermiddlequartile AS text) = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS malelowermiddlequartile_null_rate,
+    SUM(CASE WHEN CAST(femalelowermiddlequartile AS text) = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS femalelowermiddlequartile_null_rate,
+    SUM(CASE WHEN CAST(maleuppermiddlequartile AS text) ='0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS maleuppermiddlequartile_null_rate,
+    SUM(CASE WHEN CAST(femaleuppermiddlequartile AS text) ='0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS femaleuppermiddlequartile_null_rate,
+    SUM(CASE WHEN CAST(maletopquartile AS text) = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS maletopquartile_null_rate,
+    SUM(CASE WHEN CAST(femaletopquartile AS text) = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS femaletopquartile_null_rate,
+    SUM(CASE WHEN companylinktogpginfo = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS companylinktogpginfo_null_rate,
+    SUM(CASE WHEN responsibleperson = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS responsibleperson_null_rate,
+    SUM(CASE WHEN employersize = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS employersize_null_rate,
+    SUM(CASE WHEN currentname = '0' THEN 1 ELSE 0 END)*1.0/COUNT(employerid) AS currentname_null_rate
+FROM gender_pay_gap_21_22 
+
+--wasn't sure how to check nulls in this case for duedate and date submitted, as they were both timestamp data types. Listed here as individual quereies, both returned no nulls
+SELECT duedate
+FROM gender_pay_gap_21_22 
+WHERE duedate IS NULL -- No nulls reported
+
+SELECT datesubmitted
+FROM gender_pay_gap_21_22 
+WHERE datesubmitted IS NULL -- No nulls reported
+
+-- Also wasn't sure how to check nulls for submittedafterthedeadline column within the above case statement, as it is a boolean data type. Querying here instead. Again, no nulls.
+SELECT submittedafterthedeadline
+FROM gender_pay_gap_21_22 
+WHERE submittedafterthedeadline IS NULL -- No nulls reported
+
+--
+SELECT CAST(diffmeanhourlypercent AS text)
+FROM gender_pay_gap_21_22
+WHERE (CAST(diffmeanhourlypercent AS text)) = '0.0' OR (CAST(diffmeanhourlypercent AS text) = '0') -- Used this query to count the number of diffmeanhourlypercent that was 0.0 versus 0 by casting to a varchar so that the exact term could be registered. Used this to check if I could use this trick to filter out 0 from 0.0 values in calculated columns
+
+-- Null values in this table represented with the number 0 instead of NULL. 
+-- Employer names, IDs, and sizes, as well as "current name" columns are filled out without nulls.
+-- Some informative cells about employer contact info missing, but at minimal rates. 
+-- Up to nearly 40% of calculated statistical values have multiple rows of seemingly null data. 
+-- Having read the "Making Your Calculations" page on gov.uk's website, it seems that the calculated values are done as percentages with 2 decimal places. For this reason, I'm considering values here as non-null if they are equal to 0.0, and null when just 0.
+-- After accounting for these, there is still up to 33% null in the calculated rows. Specifically, it is the mean and median bonus percent columns that have the most null values. Overall the data here is likely still usable but these will have to be taken into consideration.
+
+--BONUS QUESTION: 
+-- From searching on the gov.uk and UK Office for National Statistics websites, SIC stands for Standard Industrial Classification and codifies a company's "Nature of business". Corresponds to what industry a company is in.
+
+
+-- THE UK-WIDE PAY GAP
+-- 5. Choose which column you will use to calculate the pay gap. 
+--Will you use DiffMeanHourlyPercent or DiffMedianHourlyPercent? Can you justify your choice?
+
+SELECT diffmeanhourlypercent, diffmedianhourlypercent --PREFER MEDIAN
+FROM gender_pay_gap_21_22
+WHERE (diffmeanhourlypercent < 0) OR (diffmedianhourlypercent < 0)
+
+
+-- According to gov.uk website, the calculated average values will return either as positive or negative values
+-- Positive percentage show that women have a lower pay/bonus than men in the company
+-- Negative percentage show that men have a lower pay/bonus than women in the company
+-- Zero percentage shows that there is equal pay/bonus between men and women. 
+-- Ex (from website): If the calculated mean results in 13.59%, then women are paid 13.59% less than men. 
+
+-- While both columns are useful, I prefer to use median, because it will give a more realistic look at the entire pool of employees. Mean might be useful in certain cases, but it could skew data significantly based on a small number of high ranking employees, ex: C-suite. While there is indeed a worthwhile conversation on gender bias within C-suite employees, they do not represent the majority of employees in an organization, and these are the ones who will suffer the material impacts of positive/negative gender bias in pay.
+SELECT
+    (CASE 
+     WHEN CAST(diffmedianhourlypercent AS text) = '0' THEN NULL
+     WHEN CAST(diffmedianhourlypercent AS text) = '0.0' THEN 'No bias'
+     WHEN diffmedianhourlypercent > 0 THEN 'Female employees earn £' || ROUND((1 - (diffmedianhourlypercent/100)), 2) || ' for every £1 their male counterparts earn.'
+     WHEN diffmedianhourlypercent < 0 THEN 'Male employees earn £' || ROUND((1 - ((-1*diffmedianhourlypercent)/100)), 2) || ' for every £1 their female counterparts earn.'
+    END) AS bias_calculation
+FROM gender_pay_gap_21_22
+
+SELECT malelowerquartile, 
+    femalelowerquartile, 
+    malelowermiddlequartile, 
+    femalelowermiddlequartile, 
+    maleuppermiddlequartile, 
+    femaleuppermiddlequartile, 
+    maletopquartile, 
+    femaletopquartile,
+    (malelowerquartile + femalelowerquartile) AS lower_quartile,
+    malelowermiddlequartile + femalelowermiddlequartile AS lower_middle_quartile,
+    maleuppermiddlequartile + femaleuppermiddlequartile AS upper_middle_quartile,
+    maletopquartile + femaletopquartile AS top_quartile,
+    malelowerquartile + femalelowerquartile + malelowermiddlequartile + femalelowermiddlequartile + maleuppermiddlequartile + femaleuppermiddlequartile + maletopquartile + femaletopquartile AS total_percent_check
+FROM gender_pay_gap_21_22 -- checking to understand numbers better. Each quartile is represented as 100%. 
+
+SELECT
+    AVG((CASE
+    WHEN malelowerquartile > femalelowerquartile THEN 1
+    WHEN femalelowerquartile > malelowerquartile THEN -1
+    WHEN malelowerquartile = femalelowerquartile THEN 0
+    END)) AS lower_quartile_bias,
+    AVG((CASE
+    WHEN malelowermiddlequartile > femalelowermiddlequartile THEN 1
+    WHEN femalelowermiddlequartile > malelowermiddlequartile THEN -1
+    WHEN malelowermiddlequartile = femalelowermiddlequartile THEN 0
+    END)) AS lower_mid_quartile_bias,
+    AVG((CASE
+    WHEN maleuppermiddlequartile > femaleuppermiddlequartile THEN 1
+    WHEN femaleuppermiddlequartile > maleuppermiddlequartile THEN -1
+    WHEN maleuppermiddlequartile = femaleuppermiddlequartile THEN 0
+    END)) AS upper_mid_quartile_bias,
+    AVG((CASE
+    WHEN maletopquartile > femaletopquartile THEN 1
+    WHEN femaletopquartile > maletopquartile THEN -1
+    WHEN maletopquartile = femaletopquartile THEN 0
+    END)) AS top_quartile_bias
+FROM gender_pay_gap_21_22 -- Slight biases towards more female employees represented in bottom two pay-quartiles and towards men in upper two pay-quartiles
+
+
+-- 6. Use an appropriate metric to find the average gender pay gap across all the companies in the data set. Did you use the mean or the median as your averaging metric? Can you justify your choice?
+-- Using the median hourly percent to calculate pay-gap. I find this is much more accurate to majority of company employees.
+SELECT
+    (CASE 
+     WHEN CAST(diffmedianhourlypercent AS text) = '0' THEN NULL
+     WHEN CAST(diffmedianhourlypercent AS text) = '0.0' THEN 'No bias'
+     WHEN diffmedianhourlypercent > 0 THEN 'Female employees earn £' || ROUND((1 - (diffmedianhourlypercent/100)), 2) || ' for every £1 their male counterparts earn.'
+     WHEN diffmedianhourlypercent < 0 THEN 'Male employees earn £' || ROUND((1 - ((-1*diffmedianhourlypercent)/100)), 2) || ' for every £1 their female counterparts earn.'
+    END) AS bias_calculation
+FROM gender_pay_gap_21_22 
+WHERE CAST(diffmedianhourlypercent AS text) != '0' -- This table explains bias for each company, and removes null values
+
+
+SELECT ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2)
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0' -- Removed null values using CTE, and calculated the average median value rate from all these companies. As a whole, this query finds that on average men are earning 12.82% more than womena cross all companies.
+
+
+
+-- 7. What are some caveats we need to be aware of when reporting the figure we've just calculated?
+-- Using this average value is a bit generalizing. It doesn't represent account for relative percent of men and women in different industries (though in turn there's an argument to be made about devaluation of salary as fields become more saturated with women)
+
+
+-- LARGEST PAY GAPS
+-- 8. What are the 10 companies with the largest pay gaps skewed towards men?
+SELECT employername, employerid, siccodes, diffmedianhourlypercent
+FROM gender_pay_gap_21_22
+ORDER BY diffmedianhourlypercent DESC
+LIMIT 10 -- HPI UK HOLDING LTD, M. ANDERSON CONSTRUCTION LIMITED, PSJ FABRICATIONS LTD, ATFC LIMITED, HULL COLLABORATIVE ACADEMY TRUST, SERVICE INNOVATION GROUP-UK LIMITED, BRAND ENERGY & INFRASTRUCTURE SERVICES UK, LIMITED, ROBINSON WEBSTER (HOLDINGS) LIMITED, THE LEARNING FOR LIFE PARTNERSHIP, and GREENBROOK HEALTHCARE (HOUNSLOW) LIMITED. These companies have male employees with a median hourly rate as little as 77% more than female employees.
+
+-- 9. What do you notice about the results? Are these well-known companies?
+-- These companies don't appear to be large, well-known companies. Ran a quick addition to the previous query to check their size and it seems like they're all relatively small. It could be that these are in more male dominated insustries, as some of the name results suggest these companies are in construction and similar fields. 
+
+SELECT employername, employerid, siccodes, diffmedianhourlypercent, employersize
+FROM gender_pay_gap_21_22
+ORDER BY diffmedianhourlypercent DESC
+LIMIT 10
+
+-- 10. Apply some additional filtering to pick out the most significant companies with large pay gaps.
+
+SELECT employername, employerid, siccodes, diffmedianhourlypercent, employersize, 
+(CASE
+    WHEN malelowerquartile > femalelowerquartile THEN 1
+    WHEN femalelowerquartile > malelowerquartile THEN -1
+    WHEN malelowerquartile = femalelowerquartile THEN 0
+    END) AS lower_quartile_bias,
+    (CASE
+    WHEN malelowermiddlequartile > femalelowermiddlequartile THEN 1
+    WHEN femalelowermiddlequartile > malelowermiddlequartile THEN -1
+    WHEN malelowermiddlequartile = femalelowermiddlequartile THEN 0
+    END) AS lower_mid_quartile_bias,
+    (CASE
+    WHEN maleuppermiddlequartile > femaleuppermiddlequartile THEN 1
+    WHEN femaleuppermiddlequartile > maleuppermiddlequartile THEN -1
+    WHEN maleuppermiddlequartile = femaleuppermiddlequartile THEN 0
+    END) AS upper_mid_quartile_bias,
+    (CASE
+    WHEN maletopquartile > femaletopquartile THEN 1
+    WHEN femaletopquartile > maletopquartile THEN -1
+    WHEN maletopquartile = femaletopquartile THEN 0
+    END) AS top_quartile_bias
+FROM gender_pay_gap_21_22
+ORDER BY diffmedianhourlypercent DESC
+LIMIT 10
+
+-- 11. How would you report on the results? Can we say that these companies are engaging in unlawful pay discrimination?
+-- From the data provided, we can see that the top 10 companies with pay gaps skewed towards men have earnings from 77% to 100% higher than the female employees. These companies are all relatively small. The top two companies that have a 100% higher salary for males than females appear to have majority male employees across all pay quartiles. What is more interesting, however, are the companies with equal numbers of male and female employees in each quartile or with more female employees in each quartile, as this implies a large discrepancy somewhere in median earnings.
+-- It is difficult to say whether or not these companies are engaging in unlawful pay discrimination. From the gov.uk website, it is described that company calculations are focused mostly on full-time employees, so this data could be very limited with respect to its information on contract and part-time workers. Considering that these industries include construction and healthcare, and considering the relative small-size of the companies shown, there may be many employees with irregular hours that are not being accounted for, and more investigation would need to be conducted before determining if thre indeed was unlawful practice.
+
+
+
+-- GEOGRAPHIC DIFFERENCES
+--12. What's the average pay gap in London versus outside London?
+-- London postcodes all have cardinal directions as the first two letters. Only doing inner London, decided to ignore outer-London area
+
+SELECT COUNT(postcode)
+FROM gender_pay_gap_21_22
+
+
+SELECT COUNT(SUBSTRING(postcode,1,2)) -- London postcode list
+FROM gender_pay_gap_21_22
+WHERE SUBSTRING(postcode,1,2) IN ('E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9', 'NW', 'SE', 'EC', 'SW', 'WC', 'W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8', 'W9', 'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9')
+
+
+SELECT ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2)
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0' AND SUBSTRING(postcode,1,2) IN ('E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9', 'NW', 'SE', 'EC', 'SW', 'WC', 'W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8', 'W9', 'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9')
+-- Average pay-gap in London is 14.20
+
+
+SELECT ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2)
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0' AND SUBSTRING(postcode,1,2) NOT IN ('E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9', 'NW', 'SE', 'EC', 'SW', 'WC', 'W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8', 'W9', 'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9')
+-- Average pay-gap outside of London is 12.45
+
+
+--13. What's the averaeg pay gap in London versus Birmingham?
+-- Birmingham postcodes all have B1, B2, B3, or B4 as the first two characters
+SELECT postcode -- Birminghan postcode companies list
+FROM gender_pay_gap_21_22
+WHERE SUBSTRING(postcode,1,2) IN ('B1', 'B2', 'B3','B4','B5','B6','B7','B8','B9')
+
+
+SELECT ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2)
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0' AND SUBSTRING(postcode,1,2) IN ('B1', 'B2', 'B3','B4','B5','B6','B7','B8','B9')
+-- Average pay gap in Birmingham is 11.87 - more similar to out-of-london rates
+
+
+
+-- INDUSTRY DIFFERENCES
+-- 14. What's the average pay gap within schools?
+
+-- siccode helps us understand the indsutry a company is in.
+-- education siccodes are 85100, 85200, 85310, 85320, 85410, 85421, 85422, 85510, 85520, 85590, 85600
+SELECT ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2),
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0' AND siccodes IN ('85100', '85200', '85310', '85320', '85410', '85421', '85422', '85510', '85520', '85590', '85600')
+-- Pay gap within schools is 24.98
+
+SELECT ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2),
+AVG((CASE
+    WHEN malelowerquartile > femalelowerquartile THEN 1
+    WHEN femalelowerquartile > malelowerquartile THEN -1
+    WHEN malelowerquartile = femalelowerquartile THEN 0
+    END)) AS lower_quartile_bias,
+AVG    ((CASE
+    WHEN malelowermiddlequartile > femalelowermiddlequartile THEN 1
+    WHEN femalelowermiddlequartile > malelowermiddlequartile THEN -1
+    WHEN malelowermiddlequartile = femalelowermiddlequartile THEN 0
+    END)) AS lower_mid_quartile_bias,
+AVG    ((CASE
+    WHEN maleuppermiddlequartile > femaleuppermiddlequartile THEN 1
+    WHEN femaleuppermiddlequartile > maleuppermiddlequartile THEN -1
+    WHEN maleuppermiddlequartile = femaleuppermiddlequartile THEN 0
+    END)) AS upper_mid_quartile_bias,
+AVG    ((CASE
+    WHEN maletopquartile > femaletopquartile THEN 1
+    WHEN femaletopquartile > maletopquartile THEN -1
+    WHEN maletopquartile = femaletopquartile THEN 0
+    END)) AS top_quartile_bias
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0' AND siccodes IN ('85100', '85200', '85310', '85320', '85410', '85421', '85422', '85510', '85520', '85590', '85600')
+-- Factoring for distribution of pay-quartiles, all quartiles have higher rates of female employees, yet pay gap is still significant. 
+
+
+-- 15. What's the average pay gap within banks?
+-- Bank SIC codes are 64110 and 64191
+SELECT ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2)
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0' AND siccodes IN ('64110','64191')
+-- Pay gap is 30.82
+
+-- Factoring in for employee distribution in pay-quartiles
+SELECT ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2),
+AVG((CASE
+    WHEN malelowerquartile > femalelowerquartile THEN 1
+    WHEN femalelowerquartile > malelowerquartile THEN -1
+    WHEN malelowerquartile = femalelowerquartile THEN 0
+    END)) AS lower_quartile_bias,
+AVG    ((CASE
+    WHEN malelowermiddlequartile > femalelowermiddlequartile THEN 1
+    WHEN femalelowermiddlequartile > malelowermiddlequartile THEN -1
+    WHEN malelowermiddlequartile = femalelowermiddlequartile THEN 0
+    END)) AS lower_mid_quartile_bias,
+AVG    ((CASE
+    WHEN maleuppermiddlequartile > femaleuppermiddlequartile THEN 1
+    WHEN femaleuppermiddlequartile > maleuppermiddlequartile THEN -1
+    WHEN maleuppermiddlequartile = femaleuppermiddlequartile THEN 0
+    END)) AS upper_mid_quartile_bias,
+AVG    ((CASE
+    WHEN maletopquartile > femaletopquartile THEN 1
+    WHEN femaletopquartile > maletopquartile THEN -1
+    WHEN maletopquartile = femaletopquartile THEN 0
+    END)) AS top_quartile_bias
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0' AND siccodes IN ('64110','64191')
+-- Factoring in for employee distribution in pay-quartiles, majority of quartiles have more men than women, with the exceptino of the lower-most quartile.
+
+-- 16. Is there a relationship between the number of employees at a company and the average pay gap?
+SELECT employersize, ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2) AS avg_pay_gap
+FROM gender_pay_gap_21_22
+GROUP BY employersize
+ORDER BY 2
+-- Overall, it appears that the smaller the company, the greater the pay_gap. The only exception is companies with less than 250 employees, which ranks third among the 6 groups, as opposed to last. The reporting rules differed for companies of this size compared to others, so this might explain the discrepancy. It could also be that there's more of a distribution of different types of companies, independent companies, etc. where there might be more outliers in one direction or another with respect to employee ratios. Smaller companies could also be using more contract work and part-time employees, which may also have an impact on the pay gap.
+
+
+
+
+--PRESENTATION CHARTS
+
+SELECT 
+    COUNT((CASE WHEN diffmedianhourlypercent > 0 THEN diffmedianhourlypercent END)) AS skew_male_count,
+    COUNT((CASE WHEN diffmedianhourlypercent < 0 THEN diffmedianhourlypercent END)) AS skew_female_count,
+    COUNT((CASE WHEN diffmedianhourlypercent = 0 THEN diffmedianhourlypercent END)) AS no_skew_count
+FROM gender_pay_gap_21_22
+
+
+
+
+SELECT SUBSTRING(postcode,1,3) AS postcode_area/*,postcode*/, ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2) AS pay_gap --, postcode
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0'
+GROUP BY postcode_area
+ORDER BY 1
+
+
+SELECT ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2)
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0'
+-- National average
+
+SELECT ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2)
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0' AND SUBSTRING(postcode,1,2) IN ('B1', 'B2', 'B3','B4','B5','B6','B7','B8','B9')
+-- Average pay gap in Birmingham is 11.87 - more similar to out-of-london rates
+
+SELECT ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2)
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0' AND SUBSTRING(postcode,1,2) IN ('E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9', 'NW', 'SE', 'EC', 'SW', 'WC', 'W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8', 'W9', 'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9')
+--Average pay gap in London - 14.20
+
+SELECT ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2)
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0' AND SUBSTRING(postcode,1,2) IN ('G1','G2','G3','G4','G5','G6','G7','G8','G9')
+-- Glasgow pay gap - 8.24
+
+SELECT ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2)
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0' AND SUBSTRING(postcode,1,2) IN ('L1','L2','L3','L4','L5','L6','L7','L8','L9')
+-- Liverpool pay gap - 10.97
+
+SELECT ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2)
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0' AND SUBSTRING(postcode,1,2) IN ('M1','M2','M3','M4','M5','M6','M7','M8','M9')
+--Manchester pay gap - 10.09
+
+SELECT ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2)
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0' AND SUBSTRING(postcode,1,2) = 'CF' 
+--Cardiff pay gap - 10.62
+
+
+SELECT ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2)
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0' AND SUBSTRING(postcode,1,2) = 'SR'
+-- Sunderland pay gap 9.51
+
+
+-- City Square Mile Average? Poscode EC
+SELECT ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2)
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0' AND SUBSTRING(postcode,1,2) IN ('E1', 'WC','EC') 
+-- 17.42 - Financial sector and central london
+
+SELECT ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2)
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0' AND SUBSTRING(postcode,1,2) IN ('E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9', 'NW', 'SE', 'SW', 'W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8', 'W9', 'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9')
+-- Non financial sector
+
+
+SELECT ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2), 
+    AVG(malelowerquartile), 
+    AVG(femalelowerquartile), 
+    AVG(malelowermiddlequartile), 
+    AVG(femalelowermiddlequartile), 
+    AVG(maleuppermiddlequartile), 
+    AVG(femaleuppermiddlequartile), 
+    AVG(maletopquartile), 
+    AVG(femaletopquartile)
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0' AND siccodes IN ('64110','64191')
+
+
+
+SELECT ROUND(SUM(diffmedianhourlypercent)/COUNT(employerid),2), 
+    AVG(malelowerquartile), 
+    AVG(femalelowerquartile), 
+    AVG(malelowermiddlequartile), 
+    AVG(femalelowermiddlequartile), 
+    AVG(maleuppermiddlequartile), 
+    AVG(femaleuppermiddlequartile), 
+    AVG(maletopquartile), 
+    AVG(femaletopquartile)
+FROM gender_pay_gap_21_22
+WHERE CAST(diffmedianhourlypercent AS text) != '0' AND siccodes IN ('85100', '85200', '85310', '85320', '85410', '85421', '85422', '85510', '85520', '85590', '85600')
+
+
